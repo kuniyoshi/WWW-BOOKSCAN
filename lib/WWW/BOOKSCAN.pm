@@ -2,72 +2,55 @@ package WWW::BOOKSCAN;
 use utf8;
 use strict;
 use warnings;
+use base "Class::Accessor";
 use Readonly;
 use Carp qw( croak );
-use Class::Accessor "antlers";
 use Path::Class qw( file );
 use Hash::MoreUtils qw( slice_exists );
-use LWP::UserAgent;
 use Web::Query;
-use HTTP::Cookies;
+use WWW::BOOKSCAN::UserAgent;
+use WWW::BOOKSCAN::URL;
 use WWW::BOOKSCAN::Order;
 use WWW::BOOKSCAN::PDF;
 
 our $VERSION = "0.01";
 
-Readonly my $AGENT  => join "/", __PACKAGE__, $VERSION;
-Readonly my %URL    => (
-    login  => URI->new( "https://system.bookscan.co.jp/login.php" ),
-    home   => URI->new( "https://system.bookscan.co.jp/mypage.php" ),
-    orders => URI->new( "https://system.bookscan.co.jp/history.php" ),
-);
-Readonly my %COOKIE => (
-    file     => "cookie.jar",
-    autosave => 1,
-);
+Readonly my @FIELDS => qw( username  password  ua  url );
 
-has "username";
-has "password";
-has "cookie_jar";
-has "ua";
+__PACKAGE__->mk_accessors( @FIELDS );
 
 sub new {
     my $class = shift;
     my %param = @_;
     my $self  = bless \%param, $class;
 
-    $self->init_cookie_jar( slice_exists( \%param, "cookie_jar" ) );
-    $self->init_ua;
+    foreach my $name ( @FIELDS ) {
+        my $method = "init_$name";
 
-    return $self;
-}
+        next
+            unless $self->can( $method );
 
-sub init_cookie_jar {
-    my $self       = shift;
-    my $cookie_jar = { @_ }->{cookie_jar}
-        // { slice_exists( \%COOKIE, qw( file autosave ) ) };
-
-    if ( ref $cookie_jar eq ref { } ) {
-        $self->cookie_jar( $cookie_jar );
-    }
-    elsif ( eval { $cookie_jar->isa( "HTTP::Cookies" ) } ) {
-        $self->cookie_jar( $cookie_jar );
-    }
-    else {
-        $self->cookie_jar( {
-            file     => $cookie_jar,
-            autosave => $COOKIE{autosave},
-        } );
+        $self->$method( %param );
     }
 
     return $self;
 }
 
 sub init_ua {
+    my $self  = shift;
+    my %param = @_;
+
+    $self->ua(
+        WWW::BOOKSCAN::UserAgent->instance( slice_exists( \%param, qw( username password ) ) ),
+    );
+
+    return $self;
+}
+
+sub init_url {
     my $self = shift;
 
-    $self->ua( LWP::UserAgent->new( agent => $AGENT ) );
-    $self->ua->cookie_jar( $self->cookie_jar );
+    $self->url( WWW::BOOKSCAN::URL->instance );
 
     return $self;
 }
@@ -76,7 +59,7 @@ sub can_home_see {
     my $self = shift;
     my $title;
 
-    my $res = $self->ua->get( $URL{home} );
+    my $res = $self->ua->get( $self->url->home );
     my $wq  = Web::Query->new_from_html( $res->decoded_content );
     $wq->find( "title" )->each( sub {
         $title = $_->text;
@@ -87,7 +70,7 @@ sub can_home_see {
 
 sub login {
     my $self = shift;
-    my( $username, $password ) = @{ { @_ } }{ qw( username password ) };
+    my( $username, $password ) = slice_exists( { @_ }, qw( username password ) );
 
     return $self
         if $self->can_home_see;
@@ -101,7 +84,7 @@ sub login {
         unless $password;
 
     my $res = $self->ua->post(
-        $URL{login},
+        $self->url->login,
         {
             email    => $username,
             password => $password,
@@ -114,20 +97,27 @@ sub login {
 sub orders {
     my $self = shift;
 
-    my $res    = $self->ua->get( $URL{orders} );
+    my $res    = $self->ua->get( $self->url->orders );
     my @orders = WWW::BOOKSCAN::Order->new_from_html( $res->decoded_content );
 
     return @orders;
 }
 
-sub pdfs_from {
-    my $self  = shift;
-    my $order = shift;
 
-    my $res  = $self->ua->get( $order->url );
-    my @pdfs = WWW::BOOKSCAN::PDF->new_from_html( $res->decoded_content );
+sub ordered_pdfs {
+    my $self = shift;
+
+    my $res  = $self->ua->get( $self->url->ordered_pdfs );
+    my @pdfs = WWW::BOOKSCAN::PDF->new_from_ordered_html( $res->decoded_content );
 
     return @pdfs;
+}
+
+sub is_tuning {
+    my $self = shift;
+    my $res  = $self->ua->get( $self->url->running_tuning );
+
+    return -1 != index $res->decoded_content, "_check.pdf";
 }
 
 1;
@@ -148,18 +138,14 @@ WWW::BOOKSCAN - An interface to www.bookscan.co.jp
   );
 
   foreach my $order ( $bookscan->orders ) {
-      foreach my $pdf ( $bookscan->pdfs_from( $order ) ) {
+      foreach my $pdf ( $order->pdfs ) {
           $pdf->save;
-
-          $pdf->order_optimize( "iphone" );
       }
   }
 
 =head1 DESCRIPTION
 
 WWW::BOOKSCAN provides an interface to donwload PDFs.
-
-
 
 =head1 AUTHOR
 

@@ -2,17 +2,19 @@ package WWW::BOOKSCAN::Order;
 use utf8;
 use strict;
 use warnings;
-use Readonly;
 use Class::Accessor "antlers";
+use Readonly;
 use HTML::SimpleLinkExtor;
-use URI;
+use WWW::BOOKSCAN::URL;
+use WWW::BOOKSCAN::UserAgent;
 
-has "url";
+Readonly my @FIELDS => qw( resource );
 
-Readonly my %URL => (
-    scheme => "https",
-    host   => "system.bookscan.co.jp",
-);
+has $_ foreach @FIELDS;
+
+sub url { WWW::BOOKSCAN::URL->instance }
+
+sub ua { WWW::BOOKSCAN::UserAgent->instance }
 
 sub new { my $class = shift; bless { @_ }, $class }
 
@@ -28,17 +30,23 @@ sub new_from_html {
                     $extor->href;
                 };
 
-    @hrefs = map {
-        my $url = URI->new( $_ );
-        $url->scheme( $URL{scheme} );
-        $url->host( $URL{host} );
-        $url;
-    } @hrefs;
-
-    @orders = map { $class->new( url => $_ ) } @hrefs;
+    @orders = map { $class->new( resource => $class->url->url_for( $_ ) ) } @hrefs;
 
     return @orders;
 }
+
+sub pdfs {
+    my $self = shift;
+
+    my $res  = $self->ua->get( $self->resource );
+    my @pdfs = WWW::BOOKSCAN::PDF->new_from_html( $res->decoded_content );
+
+    return @pdfs;
+}
+
+use overload q{""} => \&as_string;
+
+sub as_string { shift->resource }
 
 1;
 

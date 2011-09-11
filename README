@@ -1,27 +1,29 @@
-This is Perl module WWW::BOOKSCAN.
+NAME
+    WWW::BOOKSCAN - An interface to www.bookscan.co.jp
 
-INSTALLATION
+SYNOPSIS
+      use WWW::BOOKSCAN;
 
-WWW::BOOKSCAN installation is straightforward. If your CPAN shell is set up,
-you should just be able to do
+      my $bookscan = WWW::BOOKSCAN->new;
+      $bookscan->login(
+          username => "foo",
+          password => "bar",
+      );
 
-    % cpan WWW::BOOKSCAN
+      foreach my $order ( $bookscan->orders ) {
+          foreach my $pdf ( $order->pdfs ) {
+              $pdf->save;
+          }
+      }
 
-Download it, unpack it, then build it as per the usual:
+DESCRIPTION
+    WWW::BOOKSCAN provides an interface to donwload PDFs.
 
-    % perl Makefile.PL
-    % make && make test
+AUTHOR
+    kuniyoshi kouji <kuniyoshi@cpan.org>
 
-Then install it:
+SEE ALSO
+LICENSE
+    This library is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself.
 
-    % make install
-
-DOCUMENTATION
-
-WWW::BOOKSCAN documentation is available as in POD. So you can do:
-
-    % perldoc WWW::BOOKSCAN
-
-to read the documentation online with your favorite pager.
-
-kuniyoshi kouji
