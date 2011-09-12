@@ -13,7 +13,7 @@ use WWW::BOOKSCAN::URL;
 use WWW::BOOKSCAN::Order;
 use WWW::BOOKSCAN::PDF;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 Readonly my @FIELDS => qw( username  password  ua  url );
 
@@ -70,7 +70,7 @@ sub can_home_see {
 
 sub login {
     my $self = shift;
-    my( $username, $password ) = slice_exists( { @_ }, qw( username password ) );
+    my( $username, $password ) = @{ { @_ } }{ qw( username password ) };
 
     return $self
         if $self->can_home_see;

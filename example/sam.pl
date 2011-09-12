@@ -72,8 +72,6 @@ sub save_optimized {
     }
 }
 
-exit;
-
 sub usage {
     return <<USAGE;
 usage: $0 <run mode>

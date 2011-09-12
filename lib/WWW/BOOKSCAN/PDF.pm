@@ -65,8 +65,8 @@ sub new_from_html {
         optimize => [ grep { $_->query_param( "filename" ) } @hrefs ],
     );
 
-    @{ $urls{download} } = map { $_->scheme( "http" ); $_ }
-                           @{ $urls{download} };
+    $_->scheme( "http" )
+        foreach @{ $urls{download} };
 
     @pdfs = map {
         my $url = $_;
@@ -79,8 +79,8 @@ sub new_from_html {
     } @{ $urls{download} };
 
     foreach my $pdf ( @pdfs ) {
-        my( $url ) = grep { $_->query_param( "filename" ) eq $pdf->filename }
-                     @{ $urls{optimize} };
+        my $url = first { $_->query_param( "filename" ) eq $pdf->filename }
+                  @{ $urls{optimize} };
 
         $pdf->resource( optimize => $url );
     }
@@ -104,11 +104,7 @@ sub new_from_ordered_html {
 
     foreach my $url ( @urls ) {
         my $filename = $url->query_param( "f" );
-        my $id       = do {
-            my @partial = split q{_}, $filename;
-            shift @partial;
-            join q{_}, @partial;
-        };
+        ( my $id = $filename ) =~ s{\A .*? _ }{}msx;
 
         my $pdf = $class->new(
             id       => $id,
@@ -154,7 +150,7 @@ sub optimize {
     my( $for, $add_cover ) = @{ { @_ } }{ qw( for add_cover ) };
     my %param;
 
-    croak "No optimize URL found."
+    croak "No optimization URL found."
         unless $self->resource( "optimize" );
 
     $param{optimize_type} = do {
