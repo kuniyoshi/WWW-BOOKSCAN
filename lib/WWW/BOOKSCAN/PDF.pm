@@ -162,7 +162,7 @@ sub optimize {
     my $res = $self->ua->get( $self->resource( "optimize" ) );
     my $wq  = Web::Query->new_from_html( $res->decoded_content );
 
-    $wq->find( "input" )->each( sub {
+    $wq->find( "input" )->each( sub { # Web::Query may can not accept "input[type=hidden]".
         my $input = $_;
 
         return
