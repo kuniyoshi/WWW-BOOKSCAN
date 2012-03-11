@@ -2,6 +2,7 @@ package WWW::BOOKSCAN::Order;
 use utf8;
 use strict;
 use warnings;
+use overload q{""} => \&as_string;
 use Class::Accessor "antlers";
 use Readonly;
 use HTML::SimpleLinkExtor;
@@ -16,7 +17,7 @@ sub url { WWW::BOOKSCAN::URL->instance }
 
 sub ua { WWW::BOOKSCAN::UserAgent->instance }
 
-sub new { my $class = shift; bless { @_ }, $class }
+sub new { bless { splice @_, 1 }, shift }
 
 sub new_from_html {
     my $class = shift;
@@ -43,8 +44,6 @@ sub pdfs {
 
     return @pdfs;
 }
-
-use overload q{""} => \&as_string;
 
 sub as_string { shift->resource }
 

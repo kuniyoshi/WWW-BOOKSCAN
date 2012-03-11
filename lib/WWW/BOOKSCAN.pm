@@ -13,7 +13,7 @@ use WWW::BOOKSCAN::URL;
 use WWW::BOOKSCAN::Order;
 use WWW::BOOKSCAN::PDF;
 
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
 Readonly my @FIELDS => qw( username  password  ua  url );
 
@@ -104,11 +104,11 @@ sub orders {
 }
 
 
-sub ordered_pdfs {
+sub optimized_pdfs {
     my $self = shift;
 
-    my $res  = $self->ua->get( $self->url->ordered_pdfs );
-    my @pdfs = WWW::BOOKSCAN::PDF->new_from_ordered_html( $res->decoded_content );
+    my $res  = $self->ua->get( $self->url->optimized_pdfs );
+    my @pdfs = WWW::BOOKSCAN::PDF->new_from_optimized_html( $res->decoded_content );
 
     return @pdfs;
 }
@@ -118,6 +118,15 @@ sub is_tuning {
     my $res  = $self->ua->get( $self->url->running_tuning );
 
     return -1 != index $res->decoded_content, "_check.pdf";
+}
+
+sub get_tuning_wait_time {
+    my $self = shift;
+    my $res  = $self->ua->get( $self->url->running_tuning );
+
+    my( $minutes ) = $res->decoded_content =~ m{ 約 (\d+) 分 }msx;
+
+    return $minutes;
 }
 
 1;

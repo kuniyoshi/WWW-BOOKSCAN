@@ -25,7 +25,7 @@ sub new {
 
 sub _new_instance {
     my $class = shift;
-    my %param = slice_exists( { @_ }, qw( username password cookie_jar ja ) );;
+    my %param = slice_exists( { @_ }, qw( username password cookie_jar ja ) );
     my $self  = bless \%param, $class;
 
     $self->cookie_jar( $self->init_cookie_jar );

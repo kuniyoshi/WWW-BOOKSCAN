@@ -2,9 +2,11 @@ package WWW::BOOKSCAN::PDF;
 use utf8;
 use strict;
 use warnings;
+use overload q{""} => \&as_string;
 use Class::Accessor "antlers";
 use Carp qw( carp croak );
 use Readonly;
+use Time::HiRes qw( gettimeofday tv_interval );
 use List::Util qw( first );
 use List::MoreUtils qw( uniq );
 use HTML::SimpleLinkExtor;
@@ -29,7 +31,7 @@ sub url { WWW::BOOKSCAN::URL->instance }
 
 sub ua { WWW::BOOKSCAN::UserAgent->instance }
 
-sub new { my $class = shift; bless { @_ }, $class }
+sub new { bless { splice @_, 1 }, shift }
 
 sub resource {
     my $self = shift;
@@ -88,7 +90,7 @@ sub new_from_html {
     return @pdfs;
 }
 
-sub new_from_ordered_html {
+sub new_from_optimized_html {
     my $class = shift;
     my $html  = shift;
     my @pdfs;
@@ -118,8 +120,6 @@ sub new_from_ordered_html {
     return @pdfs;
 }
 
-use overload q{""} => \&as_string;
-
 sub as_string { shift->resource( "download" ) }
 
 sub save {
@@ -137,17 +137,31 @@ sub save {
         }
     }
 
+    $self->{start} = [ gettimeofday ];
+
     $self->ua->get(
         $self->resource( "download" ),
         ":content_file" => $filename,
     );
 
+    $self->{end} = [ gettimeofday ];
+
     return $filename;
+}
+
+sub took {
+    my $self = shift;
+    my( $start, $end ) = @{ $self }{ qw( start end ) };
+
+    return
+        if ! defined $start || ! defined $end;
+
+    return tv_interval( $start, $end );
 }
 
 sub optimize {
     my $self = shift;
-    my( $for, $add_cover ) = @{ { @_ } }{ qw( for add_cover ) };
+    my( $for, $add_cover, $overwrite ) = @{ { @_ } }{ qw( for add_cover overwrite ) };
     my %param;
 
     croak "No optimization URL found."

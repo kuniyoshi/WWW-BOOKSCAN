@@ -1,6 +1,10 @@
 Revision history for Perl extension WWW::BOOKSCAN
 
+0.03    Mon Mar 12  1:27:49 2012
+        - Improve example.
+        - Improve naming.
+        - Fix coding style.
 0.02    Mon Aug 13  0:23:04 2011
-        - Fix a little bug
+        - Fix a little bug.
 0.01    Sat Jul 16 12:44:48 2011
-        - original version
+        - original version.

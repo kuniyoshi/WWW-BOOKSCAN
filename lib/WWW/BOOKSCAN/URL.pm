@@ -14,7 +14,7 @@ Readonly my %URL => (
     login          => URI->new( "https://system.bookscan.co.jp/login.php" ),
     home           => URI->new( "https://system.bookscan.co.jp/mypage.php" ),
     orders         => URI->new( "https://system.bookscan.co.jp/history.php" ),
-    ordered_pdfs   => URI->new( "https://system.bookscan.co.jp/tunelablist.php" ),
+    optimized_pdfs => URI->new( "https://system.bookscan.co.jp/tunelablist.php" ),
     running_tuning => URI->new( "https://system.bookscan.co.jp/tunelabnowlist.php" ),
 );
 Readonly my @WISH_SCHEMES => qw( http  https );
